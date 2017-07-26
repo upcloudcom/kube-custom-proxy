@@ -1,0 +1,61 @@
+* 关心 pod 的相关数据：
+1.    "namespace": "abcdef",
+
+
+
+
+* 关心 service 的相关数据：
+
+
+
+
+
+* 所有涉及到的字段：
+| 字段名          | 默认值 |   |   | 备注   |
+|-----------------+--------+---+---+--------|
+| publiceIPListen | *所有  |   |   | 本机 ip |
+|                 |        |   |   |        |
+
+
+
+* 其他数据
+
+  #+BEGIN_SRC js
+  {
+  "data": {
+    "domain.json": {
+      "externalip": "192.168.1.24",
+      "domain": ""
+    },
+    "extention.conf": {
+      "nodes": [
+        {
+          "host": "ubuntu-24",
+          "address": "192.168.1.24",
+          "group": "group-default"
+        },
+        {
+          "host": "ubuntu-25",
+          "address": "192.168.1.25",
+          "group": "group-default"
+        }
+      ],
+      "groups": [
+        {
+          "id": "group-default",
+          "name": "默认网络",
+          "type": "public",
+          "address": "192.168.1.25",
+          "domain": "v2.test.tenxcloud.com",
+          "is_default": true
+        }
+      ]
+    }
+  }
+}
+  #+END_SRC
+
+* 修改后的流程：
+1. sync service info and pod info
+2. sync service or pod info when event hapened
+3. rewrite lock
