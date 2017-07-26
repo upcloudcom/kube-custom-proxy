@@ -1,0 +1,44 @@
+#!/bin/bash
+PidFile=/var/run/$(basename $0).pid
+ChildPidFile=/var/run/haproxy.pid
+echo "$$">${PidFile}
+function reloadchild
+{
+  echo "Reloading"
+  EXT_CMD=
+  CHPID=
+  if [ -f "$ChildPidFile" ]; then
+     CHPID=$(cat ${ChildPidFile})
+     if [ -n "$CHPID" ] && [ -n $(ps -o pid | grep  "$CHPID") ]; then
+     EXT_CMD="-sf $(cat ${ChildPidFile})"  
+     fi
+  fi
+  haproxy -f /etc/haproxy/haproxy.cfg -db ${EXT_CMD} &
+  CHPID=$!
+  echo "$CHPID" >${ChildPidFile}
+}
+
+trap reloadchild SIGUSR1
+trap "cat ${ChildPidFile} | xargs kill -TERM; exit 1" SIGTERM SIGINT
+
+reloadchild
+while true; do
+
+  if [ -f "$ChildPidFile" ]; then 
+    CHPID=$(cat ${ChildPidFile})
+    echo "Waiting for process Terminating,pid: $CHPID"
+    wait $CHPID
+    sleep 2
+    if  [ -z $(ps -o pid | grep  "$CHPID") ]; then
+          echo "Cannot find children process, will restart"
+          reloadchild
+    fi
+  else
+    echo "$ChildPidFile is Not found, will reload"
+    reloadchild
+  fi
+
+    
+done
+
+#kill  -s SIGUSR1 $(cat /var/run/pidrunner.pid)
