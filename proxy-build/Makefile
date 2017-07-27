@@ -1,9 +1,11 @@
 .PHONY: build
 
-TAG = v2.2.0
-PREFIX = 192.168.1.55/tenx_containers
+PREFIX = harbor.enncloud.cn/paas
 FLAGS = 
-VERSION=v2.2.0
+VERSION=dev
 
 build:  
-	docker build -t $(PREFIX)/tenx-proxy:$(VERSION) -f Dockerfile-proxy .  
+	cp ../tenx-proxy  .
+	docker build -t $(PREFIX)/proxy:$(VERSION) -f Dockerfile-proxy .  
+	rm tenx-proxy
+	echo "docker push $(PREFIX)/proxy:$(VERSION)"

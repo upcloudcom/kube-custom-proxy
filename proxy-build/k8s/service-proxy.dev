@@ -1,0 +1,60 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  creationTimestamp: 2017-06-08T05:47:45Z
+  generation: 3
+  labels:
+    name: service-proxy
+  name: service-proxy
+  namespace: kube-system
+  resourceVersion: "12194746"
+  selfLink: /apis/extensions/v1beta1/namespaces/kube-system/daemonsets/service-proxy
+  uid: ff32f543-4c0d-11e7-bc70-52549da43ad9
+spec:
+  selector:
+    matchLabels:
+      name: service-proxy
+  template:
+    metadata:
+      annotations:
+        scheduler.alpha.kubernetes.io/affinity: '{"nodeAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":{"nodeSelectorTerms":[{"matchExpressions":[{"key":"role","operator":"In","values":["proxy"]}]}]}}}'
+      creationTimestamp: null
+      labels:
+        name: service-proxy
+    spec:
+      containers:
+      - command:
+        - /run.sh
+        - --plugins=tenx-proxy --watch=watchsrvs --emailReceiver=yangle@tenxcloud.com
+          --config=/etc/tenx/domain.json
+        image: harbor.enncloud.cn/paas/proxy:dev
+        imagePullPolicy: IfNotPresent
+        name: service-proxy
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        volumeMounts:
+        - mountPath: /var/run/docker.sock
+          name: docker-sock
+        - mountPath: /etc/tenx/
+          name: kube-config
+      dnsPolicy: ClusterFirst
+      hostNetwork: true
+      nodeSelector:
+        role: proxy
+      restartPolicy: Always
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - emptyDir: {}
+        name: docker-sock
+      - hostPath:
+          path: /var/run/docker.sock
+        name: config-volume
+      - configMap:
+          defaultMode: 420
+          name: kube-config
+        name: kube-config
+status:
+  currentNumberScheduled: 1
+  desiredNumberScheduled: 1
+  numberMisscheduled: 0
