@@ -1,6 +1,5 @@
-#FROM index.tenxcloud.com/tenx_containers/alpine-with-bash:1.0
-#FROM alpine:latest
-FROM bash
+#FROM bash
+FROM harbor.enncloud.cn/paas/proxy:v2.2.2
 ##################################################
 # install supervisord nodejs npm  mysql and git 
 ##################################################
@@ -19,7 +18,7 @@ ADD haproxy/default.pem /etc/sslkeys/default.pem
 ADD haproxy/503.http /etc/haproxy/errors/503.http
 ADD pidrunner /pidrunner
 ADD run-haproxy.sh /run.sh
-RUN mkdir -p /run/haproxy  && ln -s  /usr/local/bin/bash /bin/bash
+#RUN mkdir -p /run/haproxy  && ln -s  /usr/local/bin/bash /bin/bash
+RUN mkdir -p /run/haproxy
 
 ADD tenx-proxy /opt/bin/tenx-proxy
-
