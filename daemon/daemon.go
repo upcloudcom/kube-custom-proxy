@@ -23,7 +23,7 @@ func NewDaemon() *tcdaemon {
 
 func (t *tcdaemon) Run(restartChan chan interface{}) {
 	dockerclient := dockertools.ConnectToDockerOrDie(*tcconfig.DockerDaemonUrl, 0)
-	if K8sClient, err := k8sutil.NewK8sWatcher(*tcconfig.KubernetesMasterUrl, *tcconfig.BearerToken, "v1"); err != nil {
+	if K8sClient, err := k8sutil.NewK8sWatcher(*tcconfig.KubernetesMasterUrl, *tcconfig.BearerToken, "v1", *tcconfig.Username); err != nil {
 		fmt.Printf("failed to create kubernetes client, %s\n", err)
 	} else {
 		K8sClient.Run(dockerclient, restartChan)

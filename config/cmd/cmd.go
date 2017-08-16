@@ -36,6 +36,8 @@ please type tenx-proxy --help for more info.`,
 		"http://localhost:8080", "Kubernetes apiserver url, default: http://localhost:8080")
 	config.BearerToken = cmds.PersistentFlags().String("token",
 		"", "access token for kubernetes apiserver url")
+	config.Username = cmds.PersistentFlags().String("username",
+		"", "username for kubernetes apiserver url")
 	config.Namespace = cmds.PersistentFlags().String("namespace", "default",
 		"Kubernetes namespace used by command line tool")
 	config.PubIface = cmds.PersistentFlags().String("Iface",

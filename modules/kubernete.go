@@ -37,8 +37,8 @@ type K8sService struct {
 	apiv1.Service
 }
 
-func NewKubernetes(master, bearerToken string) (ret *Kubernetes, err error) {
-	client, err := k8smod.NewK8sClientSet("tenxcloud", "https", master, bearerToken, "v1")
+func NewKubernetes(master, bearerToken, username string) (ret *Kubernetes, err error) {
+	client, err := k8smod.NewK8sClientSet("tenxcloud", "https", master, bearerToken, "v1", username)
 	if err != nil {
 		glog.Errorf("failed to create api server client, error: %#v", err)
 		return nil, err

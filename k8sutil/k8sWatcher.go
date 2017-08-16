@@ -55,11 +55,11 @@ func GetEnabledPlugins(pluginlist string) map[string]bool {
 }
 
 // NewK8sWatcher creates a new watcher client
-func NewK8sWatcher(apiServerURL, apiServerToken, apiVersion string) (*K8sWatcher, error) {
+func NewK8sWatcher(apiServerURL, apiServerToken, apiVersion, username string) (*K8sWatcher, error) {
 	method := "NewK8sWather"
 	//client, _, err := k8smod.CreateApiserverClient("tenxcloud", apiServerURL, apiServerToken, apiVersion)
 
-	client, err := k8smod.NewK8sClientSet("tenxcloud", "https", apiServerURL, apiServerToken, apiVersion)
+	client, err := k8smod.NewK8sClientSet("tenxcloud", "https", apiServerURL, apiServerToken, apiVersion, username)
 	if err != nil {
 		glog.Errorf("[%s] create k8sclient error:%#v\n", method, err)
 		return nil, err

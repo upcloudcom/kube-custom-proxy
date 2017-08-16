@@ -282,7 +282,7 @@ func (w *Haproxy) SyncPods() {
 	go func() {
 		for _ = range ticker.C {
 			glog.V(2).Info("Syncing pod information...")
-			clientApi, err := modules.NewKubernetes(*config.KubernetesMasterUrl, *config.BearerToken)
+			clientApi, err := modules.NewKubernetes(*config.KubernetesMasterUrl, *config.BearerToken, *config.Username)
 			if err != nil {
 				time.Sleep(time.Second * 2)
 				continue
@@ -316,7 +316,7 @@ func (w *Haproxy) SyncServices() {
 	go func() {
 		for _ = range ticker.C {
 			glog.V(2).Info("Syncing service information...")
-			clientApi, err := modules.NewKubernetes(*config.KubernetesMasterUrl, *config.BearerToken)
+			clientApi, err := modules.NewKubernetes(*config.KubernetesMasterUrl, *config.BearerToken, *config.Username)
 			if err != nil {
 				time.Sleep(time.Second * 2)
 				continue
@@ -346,7 +346,7 @@ func (w *Haproxy) SyncServices() {
 func (w *Haproxy) InitServicePodList() {
 	method := "InitServicePodList"
 	glog.V(2).Infoln("Initializing service/pod list...")
-	clientApi, err := modules.NewKubernetes(*config.KubernetesMasterUrl, *config.BearerToken)
+	clientApi, err := modules.NewKubernetes(*config.KubernetesMasterUrl, *config.BearerToken, *config.Username)
 	if err != nil {
 		panic("connect kubernetes cluster error")
 	}

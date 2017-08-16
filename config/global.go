@@ -10,6 +10,7 @@ var (
 	KubernetesMasterUrl *string
 	DockerDaemonUrl     *string
 	BearerToken         *string
+	Username            *string
 
 	ExtConfigFile     *string
 	ConfigFile        *string

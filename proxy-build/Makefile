@@ -2,7 +2,7 @@
 
 PREFIX = harbor.enncloud.cn/paas
 FLAGS = 
-VERSION=dev
+VERSION=dev-bigdata
 
 build:  
 	cp ../tenx-proxy  .
