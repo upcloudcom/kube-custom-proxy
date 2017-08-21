@@ -113,11 +113,13 @@ func (p Parser) parsePods(backendName string, svc *v1.Service, pods []v1.Pod) []
 		ppp = append(ppp, parts.NewBackend(backendName, podPorts, bp))
 	}
 	for _, port := range portDetails {
-		backendName = fmt.Sprintf("%s-%s-%d", portName(port.ServicePort), svc.Namespace, port.ServicePort.TargetPort.IntVal)
-		domainName := strings.TrimSuffix(fmt.Sprintf("%s-%s.%s", portName(port.ServicePort), svc.Namespace, p.Domain), ".")
 		if strings.ToLower(port.Protocol) == "http" {
+			backendName = fmt.Sprintf("%s-%s-%d", svc.Name, svc.Namespace, port.ServicePort.TargetPort.IntVal)
+			domainName := strings.TrimSuffix(fmt.Sprintf("%s-%s.%s", svc.Name, svc.Namespace, p.Domain), ".")
 			ppp = append(ppp, parts.NewBindDomain(backendName, []string{domainName}), parts.NewBackend(backendName, podPorts, port.ServicePort.Port))
 		} else if strings.ToLower(port.Protocol) == "tcp" {
+			backendName = fmt.Sprintf("%s-%s-%d", portName(port.ServicePort), svc.Namespace, port.ServicePort.TargetPort.IntVal)
+			domainName := strings.TrimSuffix(fmt.Sprintf("%s-%s.%s", portName(port.ServicePort), svc.Namespace, p.Domain), ".")
 			ppp = append(ppp, parts.NewListen(domainName, p.PublicIP, port.Port, port.ServicePort.Port, podPorts))
 		}
 	}
