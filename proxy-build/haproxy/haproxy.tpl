@@ -20,12 +20,12 @@ defaults
     option                  redispatch
     retries                 3
     timeout http-request    10s
-    timeout queue           86400
-    timeout connect         86400
-    timeout client          86400
-    timeout server          86400
-    timeout http-keep-alive 30
-    timeout check           50
+    timeout queue           86400s
+    timeout connect         86400s
+    timeout client          86400s
+    timeout server          86400s
+    timeout http-keep-alive 30s
+    timeout check           50s
     maxconn                 50000
 
 listen stats
