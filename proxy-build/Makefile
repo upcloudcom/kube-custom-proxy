@@ -1,8 +1,7 @@
 .PHONY: build
 
-PREFIX = harbor.enncloud.cn/paas
-FLAGS = 
-VERSION=dev
+PREFIX=harbor.enncloud.cn/paas
+VERSION=v2.2.2-enn-v1
 
 build:  
 	cp ../tenx-proxy  .
