@@ -247,15 +247,15 @@ func (p Parser) notMyJob(svc *v1.Service) bool {
 	groupID, exist := svc.ObjectMeta.Annotations[config.GROUP_KEY_ANNOTAION]
 	if !exist {
 		// For old services, there is no lbgroup info, so every proxy will do the the job
-		glog.V(4).Infoln("no lbgroup info, accept, is my job")
+		glog.V(4).Infoln("no lbgroup info: accept")
 		return false
 	}
 	if groupID == config.GROUP_VAR_NONE {
-		glog.V(4).Infoln("lbgroup in none, deny, not my job")
+		glog.V(4).Infoln("lbgroup is none:  deny")
 		return true
 	}
 	if groupID != p.GroupID {
-		glog.V(4).Infoln("lbgroup in none, deny, not my job", groupID, p.GroupID)
+		glog.V(4).Infof("lbgroup %s != %s: deny\n", groupID, p.GroupID)
 		return true
 	}
 	return false
