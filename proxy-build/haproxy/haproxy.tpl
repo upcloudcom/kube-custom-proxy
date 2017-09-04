@@ -23,6 +23,7 @@ defaults
     timeout queue           86400s
     timeout connect         86400s
     timeout client          86400s
+    timeout client-fin      3s
     timeout server          86400s
     timeout http-keep-alive 30s
     timeout check           50s
