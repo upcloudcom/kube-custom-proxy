@@ -19,15 +19,18 @@ defaults
     option http-server-close
     option                  redispatch
     retries                 3
-    timeout http-request    10s
-    timeout queue           86400s
-    timeout connect         86400s
-    timeout client          86400s
+    timeout check           3s
+    timeout client          900s
     timeout client-fin      3s
-    timeout server          86400s
-    timeout http-keep-alive 30s
-    timeout check           50s
-    maxconn                 50000
+    timeout connect         5s
+    timeout http-keep-alive 900s
+    timeout http-request    60s
+    timeout queue           300s
+    timeout server          900s
+    timeout server-fin      3s
+    timeout tarpit          900s
+    timeout tunnel          24h
+    maxconn                 5000
 
 listen stats
     bind *:8889
@@ -35,6 +38,15 @@ listen stats
     stats uri /tenx-stats
     stats realm Haproxy\ Statistics
     stats auth tenxcloud:haproxy-agent
+
+{{with .FrontendLB}}
+frontend LB
+    mode http
+    option forwardfor       except 127.0.0.0/8
+    errorfile 503 /etc/haproxy/errors/503.http
+    bind {{$.PublicIP}}:443 ssl crt {{.DefaultSSLCert}}{{range .SSLCerts}} crt {{.}}{{end}}{{range .Domains}}
+    acl {{.BackendName}} hdr(host) -i {{range .DomainNames}} {{.}}{{end}}
+    use_backend {{.BackendName}} if {{.BackendName}} { ssl_fc_sni{{range .DomainNames}} {{.}}{{end}} }{{end}}{{end}}
 
 {{with .DefaultHTTP}}
 listen defaulthttp
@@ -46,14 +58,10 @@ listen defaulthttp
     acl {{.BackendName}} hdr(host) -i {{range .DomainNames}} {{.}}{{end}}
     use_backend {{.BackendName}} if {{.BackendName}}{{end}}{{end}}
 
-{{with .FrontendLB}}
-frontend LB
-    mode http
-    option forwardfor       except 127.0.0.0/8
-    errorfile 503 /etc/haproxy/errors/503.http
-    bind {{$.PublicIP}}:443 ssl crt {{.DefaultSSLCert}}{{range .SSLCerts}} crt {{.}}{{end}}{{range .Domains}}
-    acl {{.BackendName}} hdr(host) -i {{range .DomainNames}} {{.}}{{end}}
-    use_backend {{.BackendName}} if {{.BackendName}} { ssl_fc_sni{{range .DomainNames}} {{.}}{{end}} }{{end}}{{end}}
+{{with .Backend}}{{range .}}
+backend {{.BackendName}}{{$port := .Port}}{{range .Pods}}
+    cookie cookie.enncloud.cn insert indirect postonly
+    server {{.Name}} {{.IP}}:{{$port}} cookie {{.Name}} check maxconn 500{{end}}{{end}}{{end}}
 
 {{with .Listen}}{{range .}}
 listen {{.DomainName}}
@@ -61,7 +69,3 @@ listen {{.DomainName}}
     mode tcp
     balance roundrobin{{$port := .Port}}{{range .Pods}}
     server {{.Name}} {{.IP}}:{{$port}} maxconn 500{{end}}{{end}}{{end}}
-
-{{with .Backend}}{{range .}}
-backend {{.BackendName}}{{$port := .Port}}{{range .Pods}}
-    server {{.Name}} {{.IP}}:{{$port}} cookie {{.Name}} check maxconn 500{{end}}{{end}}{{end}}
