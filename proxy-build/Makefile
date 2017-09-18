@@ -2,6 +2,7 @@
 
 PREFIX=harbor.enncloud.cn/paas
 VERSION=v2.2.2-enn-v3
+#VERSION=v2.2.2-enn-debug
 
 build:  
 	cp ../tenx-proxy  .

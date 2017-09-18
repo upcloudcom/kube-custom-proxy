@@ -198,6 +198,7 @@ func (w *Haproxy) CheckExistsAndUpdateService(svc api.Service) bool {
 	defer SvcPodList.SvcInfo.SvcMutex.Unlock()
 	if len(SvcPodList.SvcInfo.ServiceList.Items) == 0 {
 		SvcPodList.SvcInfo.ServiceList.Items = append(SvcPodList.SvcInfo.ServiceList.Items, svc)
+		w.RefreshPodList()
 		return true
 	}
 
@@ -211,6 +212,7 @@ func (w *Haproxy) CheckExistsAndUpdateService(svc api.Service) bool {
 		}
 	}
 	SvcPodList.SvcInfo.ServiceList.Items = append(SvcPodList.SvcInfo.ServiceList.Items, svc)
+	w.RefreshPodList()
 	return true
 
 }
@@ -340,6 +342,33 @@ func (w *Haproxy) SyncServices() {
 		}
 	}()
 
+}
+
+func (w *Haproxy) RefreshPodList() {
+	method := "RefreshServicePodList"
+	glog.V(2).Infoln("Refresh service/pod list...")
+	clientApi, err := modules.NewKubernetes(*config.KubernetesMasterUrl, *config.BearerToken, *config.Username)
+	if err != nil {
+		panic("connect kubernetes cluster error")
+	}
+
+	svclist := GetServiceList()
+	Pods, errPods := clientApi.GetPodsByOneField("status.phase", "Running")
+	if errPods != nil {
+		glog.Infoln(method, "Error get all running pods", errPods)
+	}
+	//should be a  map!
+	for _, svc := range svclist.Items {
+		for _, pod := range Pods.Items {
+			if !w.CheckPodShouldProxy(pod) {
+				continue
+			}
+			if !CheckPodBelongService(pod, svc) {
+				continue
+			}
+			w.CheckExistsAndUpdatePod(pod)
+		}
+	}
 }
 
 // InitServicePodList ...
