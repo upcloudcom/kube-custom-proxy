@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/bin/sh
+
+sleep 2   #wating tenx-proxy
+
 PidFile=/var/run/$(basename $0).pid
 ChildPidFile=/var/run/haproxy.pid
 echo "$$">${PidFile}
@@ -10,7 +13,8 @@ function reloadchild
   if [ -f "$ChildPidFile" ]; then
      CHPID=$(cat ${ChildPidFile})
      if [ -n "$CHPID" ] && [ -n $(ps -o pid | grep  "$CHPID") ]; then
-     EXT_CMD="-sf $(cat ${ChildPidFile})"  
+     CHPIDS=`ps aux|grep "haproxy -f"|grep -v grep|awk '{print $1}'`
+     EXT_CMD="-sf $CHPID $CHPIDS"  
      fi
   fi
   haproxy -f /etc/haproxy/haproxy.cfg -db ${EXT_CMD} &

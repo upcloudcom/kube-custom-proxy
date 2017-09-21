@@ -265,7 +265,7 @@ func reloadHAProxy() error {
 
 	reloadSh := haFileFolder + "/" + reload
 
-	cmd := exec.Command("/bin/bash", reloadSh)
+	cmd := exec.Command("/bin/sh", reloadSh)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		glog.V(5).Infoln("StdoutPipe: " + err.Error())
