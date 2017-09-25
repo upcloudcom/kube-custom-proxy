@@ -1,5 +1,5 @@
 PREFIX = harbor.enncloud.cn/paas
-TAG = v2.2.0-v4-test
+TAG = v2.2.2-v4
 
 FLAGS = 
 PROJECT_DIR=$(shell cd ../../;pwd)
