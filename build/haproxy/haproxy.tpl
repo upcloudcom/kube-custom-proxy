@@ -30,7 +30,7 @@ defaults
     timeout server-fin      3s
     timeout tarpit          900s
     timeout tunnel          24h
-    maxconn                 5000
+    maxconn                 50000
 
 listen stats
     bind *:8889
@@ -68,4 +68,4 @@ listen {{.DomainName}}
     bind {{$.PublicIP}}:{{.PublicPort}}
     mode tcp
     balance roundrobin{{$port := .Port}}{{range .Pods}}
-    server {{.Name}} {{.IP}}:{{$port}} maxconn 500{{end}}{{end}}{{end}}
+    server {{.Name}} {{.IP}}:{{$port}} maxconn 2000{{end}}{{end}}{{end}}
