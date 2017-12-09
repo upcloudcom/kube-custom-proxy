@@ -109,11 +109,11 @@ func (w *Haproxy) DefaultSSLCert() string {
 }
 
 func (w *Haproxy) GetAllServices() []api.Service {
-	return GetServiceList().Items
+	return GetServiceList()
 }
 
 func (w *Haproxy) GetAllRunningPods() []api.Pod {
-	return GetPodList().Items
+	return GetPodList()
 }
 
 func (w *Haproxy) initSyncer() {
@@ -250,7 +250,7 @@ func (w *Haproxy) refresh() {
 		<-w.signal
 		w.syncer.Event() <- struct{}{}
 		// Don't reload twice within 5 seconds
-		time.Sleep(5 * time.Second)
+		time.Sleep(30 * time.Second)
 		glog.V(2).Infoln("Refreshing - current event number:", len(w.signal))
 		// If waiting job is more than 1 in the queue, consume the redundant ones directly
 		// and leave only one job to trigger the reload

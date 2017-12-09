@@ -6,10 +6,7 @@
 package prohaproxy
 
 import (
-	"encoding/json"
-	"fmt"
 	"strings"
-	"sync"
 	"tenx-proxy/config"
 	"tenx-proxy/modules"
 	"time"
@@ -18,9 +15,9 @@ import (
 	"k8s.io/kubernetes/pkg/labels"
 
 	"github.com/golang/glog"
-	"github.com/google/go-cmp/cmp"
 )
 
+/*
 var SvcPodList = servicePodList{}
 
 type servicePodList struct {
@@ -36,6 +33,7 @@ type PodListInfo struct {
 	PodList  api.PodList
 	PodMutex sync.RWMutex
 }
+*/
 
 var (
 	PIPELINE          int = 20
@@ -45,6 +43,7 @@ var (
 	ServiceRemoveChan     = make(chan api.Service, PIPELINE)
 )
 
+/*
 // PrintsvcPodlist just for debug
 func PrintsvcPodlist() {
 	for {
@@ -57,14 +56,17 @@ func PrintsvcPodlist() {
 		fmt.Println(string(strsvcpod))
 	}
 }
-
+*/
+/*
 // UpdateService ...
 func (w *Haproxy) UpdateService(obj api.Service) {
 	SvcPodList.SvcInfo.SvcMutex.Lock()
 	defer SvcPodList.SvcInfo.SvcMutex.Unlock()
 	SvcPodList.SvcInfo.ServiceList.Items = append(SvcPodList.SvcInfo.ServiceList.Items, obj)
 }
+*/
 
+/*
 // UpdatePods ...
 func (w *Haproxy) UpdatePods(objs api.PodList) {
 	method := "UpdatePods"
@@ -74,7 +76,9 @@ func (w *Haproxy) UpdatePods(objs api.PodList) {
 	defer SvcPodList.PodInfo.PodMutex.Unlock()
 	SvcPodList.PodInfo.PodList.Items = append(SvcPodList.PodInfo.PodList.Items, objs.Items...)
 }
+*/
 
+/*
 // UpdatePod ...
 func (w *Haproxy) UpdatePod(obj api.Pod) {
 	method := "UpdatePods"
@@ -84,7 +88,8 @@ func (w *Haproxy) UpdatePod(obj api.Pod) {
 	defer SvcPodList.PodInfo.PodMutex.Unlock()
 	SvcPodList.PodInfo.PodList.Items = append(SvcPodList.PodInfo.PodList.Items, obj)
 }
-
+*/
+/*
 // RemoveService ...
 func (w *Haproxy) RemoveService(svc api.Service) bool {
 	SvcPodList.SvcInfo.SvcMutex.Lock()
@@ -100,7 +105,9 @@ func (w *Haproxy) RemoveService(svc api.Service) bool {
 	}
 	return true
 }
+*/
 
+/*
 // RemovePod ...
 func (w *Haproxy) RemovePod(pod api.Pod) bool {
 	SvcPodList.PodInfo.PodMutex.Lock()
@@ -116,6 +123,7 @@ func (w *Haproxy) RemovePod(pod api.Pod) bool {
 	}
 	return true
 }
+*/
 
 // CheckServiceShouldProxy validate if service should be fine for proxy
 func (w *Haproxy) CheckServiceShouldProxy(service *api.Service) bool {
@@ -193,6 +201,7 @@ func CheckPodBelongService(pod api.Pod, svc api.Service) bool {
 
 // CheckExistsAndUpdateService ...
 // return true, means updates
+/*
 func (w *Haproxy) CheckExistsAndUpdateService(svc api.Service) bool {
 	SvcPodList.SvcInfo.SvcMutex.Lock()
 	defer SvcPodList.SvcInfo.SvcMutex.Unlock()
@@ -216,8 +225,10 @@ func (w *Haproxy) CheckExistsAndUpdateService(svc api.Service) bool {
 	return true
 
 }
+*/
 
 // CheckExistsAndUpdatePod exist or not, if not, add in list
+/*
 func (w *Haproxy) CheckExistsAndUpdatePod(pod api.Pod) bool {
 	SvcPodList.PodInfo.PodMutex.Lock()
 	defer SvcPodList.PodInfo.PodMutex.Unlock()
@@ -233,6 +244,7 @@ func (w *Haproxy) CheckExistsAndUpdatePod(pod api.Pod) bool {
 	SvcPodList.PodInfo.PodList.Items = append(SvcPodList.PodInfo.PodList.Items, pod)
 	return true
 }
+*/
 
 // HaproxyShedule ...
 func (w *Haproxy) HaproxyShedule() {
@@ -241,7 +253,7 @@ func (w *Haproxy) HaproxyShedule() {
 		select {
 		case addsvc := <-ServiceAddChan:
 			glog.V(4).Infoln("receive service", addsvc.ObjectMeta.Name)
-			if w.CheckExistsAndUpdateService(addsvc) {
+			if _, update := w.CheckExistsAndUpdateService(addsvc); update {
 				w.signal <- 1
 			}
 		case addpod := <-PodAddChan:
@@ -267,6 +279,7 @@ func (w *Haproxy) HaproxyShedule() {
 	}
 }
 
+/*
 // GetServiceList return all available service list
 func GetServiceList() api.ServiceList {
 	return SvcPodList.SvcInfo.ServiceList
@@ -276,7 +289,8 @@ func GetServiceList() api.ServiceList {
 func GetPodList() api.PodList {
 	return SvcPodList.PodInfo.PodList
 }
-
+*/
+/*
 // SyncPods ...
 func (w *Haproxy) SyncPods() {
 	method := "SyncPods"
@@ -311,6 +325,7 @@ func (w *Haproxy) SyncPods() {
 		}
 	}()
 }
+*/
 
 // SyncServices ...
 func (w *Haproxy) SyncServices() {
@@ -335,7 +350,7 @@ func (w *Haproxy) SyncServices() {
 					continue
 				}
 				glog.V(4).Info(svc.ObjectMeta.Namespace, "\t", svc.ObjectMeta.Name)
-				if w.CheckExistsAndUpdateService(svc) {
+				if _, update := w.CheckExistsAndUpdateService(svc); update {
 					w.signal <- 1
 				}
 			}
@@ -344,6 +359,7 @@ func (w *Haproxy) SyncServices() {
 
 }
 
+/*
 func (w *Haproxy) RefreshPodList() {
 	method := "RefreshServicePodList"
 	glog.V(2).Infoln("Refresh service/pod list...")
@@ -370,11 +386,13 @@ func (w *Haproxy) RefreshPodList() {
 		}
 	}
 }
+*/
 
+/*
 // InitServicePodList ...
 func (w *Haproxy) InitServicePodList() {
 	method := "InitServicePodList"
-	glog.V(2).Infoln("Initializing service/pod list...")
+	glog.V(2).Infoln("Initializing service/pod list...", method)
 	clientApi, err := modules.NewKubernetes(*config.KubernetesMasterUrl, *config.BearerToken, *config.Username)
 	if err != nil {
 		panic("connect kubernetes cluster error")
@@ -409,3 +427,4 @@ func (w *Haproxy) InitServicePodList() {
 	}
 	w.signal <- 1
 }
+*/
