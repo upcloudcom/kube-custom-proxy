@@ -160,13 +160,13 @@ func (w *Haproxy) CreateEvent(obj interface{}) {
 	if !ok2 {
 		return
 	}
-	glog.V(5).Infof("This is new for service,  %q ", newObject)
+	glog.V(2).Infof("This is new for service,  %q ", newObject)
 	if !w.CheckServiceShouldProxy(newObject) {
-		glog.V(5).Infoln(method, "no meet condition, skipping...")
+		glog.V(2).Infoln(method, "no meet condition, skipping...")
 		return
 	}
 
-	glog.V(3).Infoln(method, "Adding new service proxy: service name:", newObject.ObjectMeta.Name, "namespace:", newObject.ObjectMeta.Namespace)
+	glog.V(2).Infoln(method, "Adding new service proxy: service name:", newObject.ObjectMeta.Name, "namespace:", newObject.ObjectMeta.Namespace)
 	ServiceAddChan <- (*newObject)
 }
 
@@ -221,7 +221,7 @@ func (w *Haproxy) UpdateEvent(oldObj, newObj interface{}) {
 	newObject, ok2 = newObj.(*api.Pod)
 
 	if ok1 && ok2 {
-		glog.V(5).Infof("This is update for pod", newObject.ObjectMeta.Name)
+		glog.V(2).Infof("This is update for pod", newObject.ObjectMeta.Name)
 		if newObject.ObjectMeta.DeletionTimestamp != nil {
 			// this pod will be delete when has this filed
 			return
@@ -245,18 +245,35 @@ func (w *Haproxy) UpdateEvent(oldObj, newObj interface{}) {
 	}
 }
 
+/*
 func (w *Haproxy) refresh() {
 	for {
 		<-w.signal
 		w.syncer.Event() <- struct{}{}
 		// Don't reload twice within 5 seconds
-		time.Sleep(30 * time.Second)
+		//time.Sleep(30 * time.Second)
 		glog.V(2).Infoln("Refreshing - current event number:", len(w.signal))
 		// If waiting job is more than 1 in the queue, consume the redundant ones directly
 		// and leave only one job to trigger the reload
 		for len(w.signal) > 1 {
 			<-w.signal
 		}
+	}
+}
+*/
+func (w *Haproxy) refresh() {
+	for {
+		<-w.signal
+		l := len(w.signal)
+		glog.V(2).Infoln("Refreshing - current event number: ", l)
+		for l > 0 {
+			<-w.signal
+			l--
+		}
+		glog.V(2).Infoln("Refreshing - start refresh")
+		w.syncer.Event() <- struct{}{}
+		// Don't reload twice within 5 seconds
+		time.Sleep(5 * time.Second)
 	}
 }
 

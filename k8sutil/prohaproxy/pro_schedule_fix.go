@@ -1,11 +1,11 @@
-//create: 2017/12/09 21:12:12 change: 2017/12/10 01:38:35 author:lijiao
+//create: 2017/12/09 21:12:12 change: 2017/12/15 11:06:02 author:lijiao
 package prohaproxy
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/golang/glog"
-	"github.com/google/go-cmp/cmp"
+	//	"github.com/google/go-cmp/cmp"
 	api "k8s.io/client-go/1.5/pkg/api/v1"
 	"sync"
 	"tenx-proxy/config"
@@ -49,6 +49,12 @@ func GetPodList() (ret []api.Pod) {
 	return ret
 }
 
+/*
+func (w *Haproxy) GetKey(meta api.ObjectMeta) string {
+	return meta.Namespace + "." + meta.Name + string(meta.UID)
+}
+*/
+
 // CheckExistsAndUpdateService ...
 // return true, means updates
 func (w *Haproxy) CheckExistsAndUpdateService(svc api.Service) (error, bool) {
@@ -61,10 +67,13 @@ func (w *Haproxy) CheckExistsAndUpdateService(svc api.Service) (error, bool) {
 		w.RefreshPodList(svc)
 		return nil, true
 	}
-
-	if cmp.Equal(svc.ObjectMeta.Annotations, v.ObjectMeta.Annotations) {
-		return nil, false
-	}
+	glog.V(2).Infof("new svc annotation: %v\n", svc.ObjectMeta.Annotations)
+	glog.V(2).Infof("old svc annotation: %v\n", v.ObjectMeta.Annotations)
+	/*
+		if cmp.Equal(svc.ObjectMeta.Annotations, v.ObjectMeta.Annotations) {
+			return nil, false
+		}
+	*/
 	svcPodInfo.Services[key] = svc
 	return w.RefreshPodList(svc)
 }
@@ -183,13 +192,11 @@ func (w *Haproxy) SyncPods() {
 	method := "SyncPods"
 	ticker := time.NewTicker(time.Minute * 30)
 	go func() {
-		var err error = nil
-		var update bool = false
 		for _ = range ticker.C {
-			svcPodInfo.ServiceMutex.RLock()
+			var err error = nil
+			var update bool = false
 			for _, svc := range svcPodInfo.Services {
 				err, update = w.CheckExistsAndUpdateService(svc)
-
 				if err != nil {
 					glog.Error(method, err)
 					time.Sleep(time.Second * 2)
@@ -201,7 +208,6 @@ func (w *Haproxy) SyncPods() {
 					continue
 				}
 			}
-			svcPodInfo.ServiceMutex.RUnlock()
 			if update {
 				w.signal <- 1
 			}

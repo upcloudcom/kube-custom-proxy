@@ -32,9 +32,10 @@ import (
 
 const (
 	resyncPeriod = 30 * time.Minute
-	PODS         = "pods"
-	SERVICES     = "services"
-	ALL          = "all"
+	//	resyncPeriod = 0
+	PODS     = "pods"
+	SERVICES = "services"
+	ALL      = "all"
 )
 
 var stopCh chan struct{} = make(chan struct{})
