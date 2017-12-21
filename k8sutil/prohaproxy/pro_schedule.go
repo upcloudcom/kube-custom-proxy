@@ -43,88 +43,6 @@ var (
 	ServiceRemoveChan     = make(chan api.Service, PIPELINE)
 )
 
-/*
-// PrintsvcPodlist just for debug
-func PrintsvcPodlist() {
-	for {
-		time.Sleep(10 * time.Second)
-		strsvcpod, err := json.Marshal(SvcPodList)
-		if err != nil {
-			continue
-		}
-		// glog.Info(string(strsvcpod))
-		fmt.Println(string(strsvcpod))
-	}
-}
-*/
-/*
-// UpdateService ...
-func (w *Haproxy) UpdateService(obj api.Service) {
-	SvcPodList.SvcInfo.SvcMutex.Lock()
-	defer SvcPodList.SvcInfo.SvcMutex.Unlock()
-	SvcPodList.SvcInfo.ServiceList.Items = append(SvcPodList.SvcInfo.ServiceList.Items, obj)
-}
-*/
-
-/*
-// UpdatePods ...
-func (w *Haproxy) UpdatePods(objs api.PodList) {
-	method := "UpdatePods"
-	glog.V(4).Info(method, objs)
-
-	SvcPodList.PodInfo.PodMutex.Lock()
-	defer SvcPodList.PodInfo.PodMutex.Unlock()
-	SvcPodList.PodInfo.PodList.Items = append(SvcPodList.PodInfo.PodList.Items, objs.Items...)
-}
-*/
-
-/*
-// UpdatePod ...
-func (w *Haproxy) UpdatePod(obj api.Pod) {
-	method := "UpdatePods"
-	glog.V(4).Info(method, obj)
-
-	SvcPodList.PodInfo.PodMutex.Lock()
-	defer SvcPodList.PodInfo.PodMutex.Unlock()
-	SvcPodList.PodInfo.PodList.Items = append(SvcPodList.PodInfo.PodList.Items, obj)
-}
-*/
-/*
-// RemoveService ...
-func (w *Haproxy) RemoveService(svc api.Service) bool {
-	SvcPodList.SvcInfo.SvcMutex.Lock()
-	defer SvcPodList.SvcInfo.SvcMutex.Unlock()
-	if len(SvcPodList.SvcInfo.ServiceList.Items) == 0 {
-		return false
-	}
-	for i, v := range SvcPodList.SvcInfo.ServiceList.Items {
-		if svc.ObjectMeta.Name == v.ObjectMeta.Name && svc.ObjectMeta.Namespace == v.ObjectMeta.Namespace {
-			SvcPodList.SvcInfo.ServiceList.Items[i] = SvcPodList.SvcInfo.ServiceList.Items[0]
-			SvcPodList.SvcInfo.ServiceList.Items = SvcPodList.SvcInfo.ServiceList.Items[1:]
-		}
-	}
-	return true
-}
-*/
-
-/*
-// RemovePod ...
-func (w *Haproxy) RemovePod(pod api.Pod) bool {
-	SvcPodList.PodInfo.PodMutex.Lock()
-	defer SvcPodList.PodInfo.PodMutex.Unlock()
-	if len(SvcPodList.PodInfo.PodList.Items) == 0 {
-		return false
-	}
-	for i, v := range SvcPodList.PodInfo.PodList.Items {
-		if pod.ObjectMeta.Name == v.ObjectMeta.Name && pod.ObjectMeta.Namespace == v.ObjectMeta.Namespace {
-			SvcPodList.PodInfo.PodList.Items[i] = SvcPodList.PodInfo.PodList.Items[0]
-			SvcPodList.PodInfo.PodList.Items = SvcPodList.PodInfo.PodList.Items[1:]
-		}
-	}
-	return true
-}
-*/
-
 // CheckServiceShouldProxy validate if service should be fine for proxy
 func (w *Haproxy) CheckServiceShouldProxy(service *api.Service) bool {
 	method := "CheckServiceShouldProxy"
@@ -174,17 +92,19 @@ func (w *Haproxy) CheckPodCondition(cons []api.PodCondition) bool {
 }
 
 // CheckPodShouldProxy validate if pod should be fine for proxy
-func (w *Haproxy) CheckPodShouldProxy(pod api.Pod) bool {
+func (w *Haproxy) CheckPodShouldProxy(pod api.Pod) (bool, del bool) {
 	if pod.Status.Phase != "Running" {
-		return false
+		glog.V(2).Info("not running: ", pod.Namespace, " ", pod.Name)
+		return false, true
 	}
 	if !w.CheckPodCondition(pod.Status.Conditions) {
-		return false
+		glog.V(2).Info("not ready: ", pod.Namespace, " ", pod.Name)
+		return false, true
 	}
 	if pod.ObjectMeta.Namespace == "default" || pod.ObjectMeta.Namespace == "kube-system" {
-		return false
+		return false, false
 	}
-	return true
+	return true, false
 }
 
 // CheckPodBelongService check  pod belongs svc
@@ -199,53 +119,6 @@ func CheckPodBelongService(pod api.Pod, svc api.Service) bool {
 	return true
 }
 
-// CheckExistsAndUpdateService ...
-// return true, means updates
-/*
-func (w *Haproxy) CheckExistsAndUpdateService(svc api.Service) bool {
-	SvcPodList.SvcInfo.SvcMutex.Lock()
-	defer SvcPodList.SvcInfo.SvcMutex.Unlock()
-	if len(SvcPodList.SvcInfo.ServiceList.Items) == 0 {
-		SvcPodList.SvcInfo.ServiceList.Items = append(SvcPodList.SvcInfo.ServiceList.Items, svc)
-		w.RefreshPodList()
-		return true
-	}
-
-	for k, v := range SvcPodList.SvcInfo.ServiceList.Items {
-		if v.ObjectMeta.Name == svc.ObjectMeta.Name && v.ObjectMeta.Namespace == svc.ObjectMeta.Namespace {
-			if cmp.Equal(svc.ObjectMeta.Annotations, v.ObjectMeta.Annotations) {
-				return false
-			}
-			SvcPodList.SvcInfo.ServiceList.Items[k] = svc
-			return true
-		}
-	}
-	SvcPodList.SvcInfo.ServiceList.Items = append(SvcPodList.SvcInfo.ServiceList.Items, svc)
-	w.RefreshPodList()
-	return true
-
-}
-*/
-
-// CheckExistsAndUpdatePod exist or not, if not, add in list
-/*
-func (w *Haproxy) CheckExistsAndUpdatePod(pod api.Pod) bool {
-	SvcPodList.PodInfo.PodMutex.Lock()
-	defer SvcPodList.PodInfo.PodMutex.Unlock()
-	if len(SvcPodList.PodInfo.PodList.Items) == 0 {
-		SvcPodList.PodInfo.PodList.Items = append(SvcPodList.PodInfo.PodList.Items, pod)
-		return true
-	}
-	for _, v := range SvcPodList.PodInfo.PodList.Items {
-		if v.ObjectMeta.Name == pod.ObjectMeta.Name && v.ObjectMeta.Namespace == pod.ObjectMeta.Namespace {
-			return false
-		}
-	}
-	SvcPodList.PodInfo.PodList.Items = append(SvcPodList.PodInfo.PodList.Items, pod)
-	return true
-}
-*/
-
 // HaproxyShedule ...
 func (w *Haproxy) HaproxyShedule() {
 	// listen relevant channel
@@ -257,13 +130,11 @@ func (w *Haproxy) HaproxyShedule() {
 				w.signal <- 1
 			}
 		case addpod := <-PodAddChan:
-			// Pod Add and update
 			glog.V(2).Infoln("receive pod", addpod.ObjectMeta.Name)
 			if w.CheckExistsAndUpdatePod(addpod) {
 				w.signal <- 1
 			}
 		case delsvc := <-ServiceRemoveChan:
-			// Pod delete service
 			glog.V(2).Infoln("delete service", delsvc.ObjectMeta.Name)
 			if w.RemoveService(delsvc) {
 				w.signal <- 1
@@ -274,57 +145,8 @@ func (w *Haproxy) HaproxyShedule() {
 				w.signal <- 1
 			}
 		}
-		// time.Sleep(2 * time.Second)
 	}
 }
-
-/*
-// GetServiceList return all available service list
-func GetServiceList() api.ServiceList {
-	return SvcPodList.SvcInfo.ServiceList
-}
-
-// GetPodList return all available pod list
-func GetPodList() api.PodList {
-	return SvcPodList.PodInfo.PodList
-}
-*/
-/*
-// SyncPods ...
-func (w *Haproxy) SyncPods() {
-	method := "SyncPods"
-	ticker := time.NewTicker(time.Minute * 30)
-	go func() {
-		for _ = range ticker.C {
-			glog.V(2).Info("Syncing pod information...")
-			clientApi, err := modules.NewKubernetes(*config.KubernetesMasterUrl, *config.BearerToken, *config.Username)
-			if err != nil {
-				time.Sleep(time.Second * 2)
-				continue
-			}
-			svclist := GetServiceList()
-			Pods, errPods := clientApi.GetPodsByOneField("status.phase", "Running")
-			if errPods != nil {
-				glog.V(2).Info(method, "Error get all running pods", errPods)
-			}
-
-			for _, svc := range svclist.Items {
-				for _, pod := range Pods.Items {
-					if !w.CheckPodShouldProxy(pod) {
-						continue
-					}
-					if !CheckPodBelongService(pod, svc) {
-						continue
-					}
-					if w.CheckExistsAndUpdatePod(pod) {
-						w.signal <- 1
-					}
-				}
-			}
-		}
-	}()
-}
-*/
 
 // SyncServices ...
 func (w *Haproxy) SyncServices() {
@@ -357,73 +179,3 @@ func (w *Haproxy) SyncServices() {
 	}()
 
 }
-
-/*
-func (w *Haproxy) RefreshPodList() {
-	method := "RefreshServicePodList"
-	glog.V(2).Infoln("Refresh service/pod list...")
-	clientApi, err := modules.NewKubernetes(*config.KubernetesMasterUrl, *config.BearerToken, *config.Username)
-	if err != nil {
-		panic("connect kubernetes cluster error")
-	}
-
-	svclist := GetServiceList()
-	Pods, errPods := clientApi.GetPodsByOneField("status.phase", "Running")
-	if errPods != nil {
-		glog.Infoln(method, "Error get all running pods", errPods)
-	}
-	//should be a  map!
-	for _, svc := range svclist.Items {
-		for _, pod := range Pods.Items {
-			if !w.CheckPodShouldProxy(pod) {
-				continue
-			}
-			if !CheckPodBelongService(pod, svc) {
-				continue
-			}
-			w.CheckExistsAndUpdatePod(pod)
-		}
-	}
-}
-*/
-
-/*
-// InitServicePodList ...
-func (w *Haproxy) InitServicePodList() {
-	method := "InitServicePodList"
-	glog.V(2).Infoln("Initializing service/pod list...", method)
-	clientApi, err := modules.NewKubernetes(*config.KubernetesMasterUrl, *config.BearerToken, *config.Username)
-	if err != nil {
-		panic("connect kubernetes cluster error")
-	}
-	services, err := clientApi.GetAllService()
-	if err != nil {
-		glog.Errorln("sync service error", err)
-	}
-
-	for _, svc := range services.Items {
-		if !w.CheckServiceShouldProxy(&svc) {
-			glog.V(4).Infof("%s service in namespace %s cannot proxy", svc.ObjectMeta.Name, svc.ObjectMeta.Namespace)
-			continue
-		}
-		w.CheckExistsAndUpdateService(svc)
-	}
-	svclist := GetServiceList()
-	Pods, errPods := clientApi.GetPodsByOneField("status.phase", "Running")
-	if errPods != nil {
-		glog.Infoln(method, "Error get all running pods", errPods)
-	}
-	for _, svc := range svclist.Items {
-		for _, pod := range Pods.Items {
-			if !w.CheckPodShouldProxy(pod) {
-				continue
-			}
-			if !CheckPodBelongService(pod, svc) {
-				continue
-			}
-			w.CheckExistsAndUpdatePod(pod)
-		}
-	}
-	w.signal <- 1
-}
-*/

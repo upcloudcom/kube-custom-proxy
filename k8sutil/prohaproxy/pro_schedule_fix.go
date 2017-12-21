@@ -1,4 +1,4 @@
-//create: 2017/12/09 21:12:12 change: 2017/12/15 11:06:02 author:lijiao
+//create: 2017/12/09 21:12:12 change: 2017/12/21 14:37:55 author:lijiao
 package prohaproxy
 
 import (
@@ -49,18 +49,16 @@ func GetPodList() (ret []api.Pod) {
 	return ret
 }
 
-/*
 func (w *Haproxy) GetKey(meta api.ObjectMeta) string {
-	return meta.Namespace + "." + meta.Name + string(meta.UID)
+	return meta.Namespace + "." + meta.Name + "." + string(meta.UID)
 }
-*/
 
 // CheckExistsAndUpdateService ...
 // return true, means updates
 func (w *Haproxy) CheckExistsAndUpdateService(svc api.Service) (error, bool) {
 	svcPodInfo.ServiceMutex.Lock()
 	defer svcPodInfo.ServiceMutex.Unlock()
-	key := svc.Namespace + "." + svc.Name
+	key := w.GetKey(svc.ObjectMeta)
 	v, ok := svcPodInfo.Services[key]
 	if !ok {
 		svcPodInfo.Services[key] = svc
@@ -83,7 +81,7 @@ func (w *Haproxy) CheckExistsAndUpdatePod(pod api.Pod) bool {
 	svcPodInfo.PodMutex.Lock()
 	defer svcPodInfo.PodMutex.Unlock()
 
-	key := pod.Namespace + "." + pod.Name
+	key := w.GetKey(pod.ObjectMeta)
 	_, ok := svcPodInfo.Pods[key]
 	if !ok {
 		svcPodInfo.Pods[key] = pod
@@ -102,21 +100,28 @@ func (w *Haproxy) RefreshPodList(svc api.Service) (err error, update bool) {
 		return err, update
 	}
 
-	fselector := modules.FieldFactory("status.phase", "Running")
-	Pods, errPods := clientApi.GetPodsBySelector(svc.Namespace, nil, fselector)
+	//fselector := modules.FieldFactory("status.phase", "Running")
+	Pods, errPods := clientApi.GetPodsBySelector(svc.Namespace, nil, nil)
 	if errPods != nil {
 		glog.Infoln(method, "Error get all running pods", errPods)
 	}
 
 	for _, pod := range Pods.Items {
-		if !w.CheckPodShouldProxy(pod) {
+		proxy, del := w.CheckPodShouldProxy((pod))
+		if !proxy && !del {
+			return
+		}
+		if !CheckPodBelongService(pod, svc) && !del {
 			continue
 		}
-		if !CheckPodBelongService(pod, svc) {
-			continue
+		if del {
+			w.RemovePod(pod)
+			update = true
+		} else {
+			if w.CheckExistsAndUpdatePod(pod) {
+				update = true
+			}
 		}
-		w.CheckExistsAndUpdatePod(pod)
-		update = true
 	}
 	return nil, update
 }
@@ -138,7 +143,7 @@ func PrintsvcPodlist() {
 func (w *Haproxy) UpdateService(svc api.Service) {
 	svcPodInfo.ServiceMutex.Lock()
 	defer svcPodInfo.ServiceMutex.Unlock()
-	key := svc.Namespace + "." + svc.Name
+	key := w.GetKey(svc.ObjectMeta)
 	svcPodInfo.Services[key] = svc
 }
 
@@ -151,7 +156,7 @@ func (w *Haproxy) UpdatePods(pods api.PodList) {
 	defer svcPodInfo.PodMutex.Unlock()
 
 	for _, pod := range pods.Items {
-		key := pod.Namespace + "." + pod.Name
+		key := w.GetKey(pod.ObjectMeta)
 		svcPodInfo.Pods[key] = pod
 	}
 }
@@ -163,7 +168,7 @@ func (w *Haproxy) UpdatePod(pod api.Pod) {
 
 	svcPodInfo.PodMutex.Lock()
 	defer svcPodInfo.PodMutex.Unlock()
-	key := pod.Namespace + "." + pod.Name
+	key := w.GetKey(pod.ObjectMeta)
 	svcPodInfo.Pods[key] = pod
 }
 
@@ -171,10 +176,13 @@ func (w *Haproxy) UpdatePod(pod api.Pod) {
 func (w *Haproxy) RemoveService(svc api.Service) bool {
 	svcPodInfo.ServiceMutex.Lock()
 	defer svcPodInfo.ServiceMutex.Unlock()
-
-	key := svc.Namespace + "." + svc.Name
-	delete(svcPodInfo.Services, key)
-	return true
+	key := w.GetKey(svc.ObjectMeta)
+	if _, ok := svcPodInfo.Services[key]; ok {
+		glog.V(2).Info("delete services from cache: ", key)
+		delete(svcPodInfo.Services, key)
+		return true
+	}
+	return false
 }
 
 // RemovePod ...
@@ -182,9 +190,13 @@ func (w *Haproxy) RemovePod(pod api.Pod) bool {
 	svcPodInfo.PodMutex.Lock()
 	defer svcPodInfo.PodMutex.Unlock()
 
-	key := pod.Namespace + "." + pod.Name
-	delete(svcPodInfo.Pods, key)
-	return true
+	key := w.GetKey(pod.ObjectMeta)
+	if _, ok := svcPodInfo.Pods[key]; ok {
+		glog.V(2).Info("delete pod from cache: ", key)
+		delete(svcPodInfo.Pods, key)
+		return true
+	}
+	return false
 }
 
 // SyncPods ...

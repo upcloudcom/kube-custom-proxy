@@ -44,7 +44,8 @@ func (p *Parser) Update(instance cfgfile.HAProxyInstance) {
 
 func (p Parser) Parse(service *v1.Service, pods []v1.Pod) []cfgfile.ConfigPart {
 	if p.noneOfMyBusiness(service) {
-		glog.V(4).Infoln("not responsible for this service", service)
+		glog.V(2).Infof("not responsible for this service: %s %s\n", service.Name, service.Namespace)
+		glog.V(4).Info("not responsible for this service:", service)
 		return nil
 	}
 	backendName := backendName(service)
@@ -247,15 +248,15 @@ func (p Parser) notMyJob(svc *v1.Service) bool {
 	groupID, exist := svc.ObjectMeta.Annotations[config.GROUP_KEY_ANNOTAION]
 	if !exist {
 		// For old services, there is no lbgroup info, so every proxy will do the the job
-		glog.V(4).Infoln("no lbgroup info: accept")
+		glog.V(2).Infof("not set lbgroup, accept svc: %s %s\n", svc.Name, svc.Namespace)
 		return false
 	}
 	if groupID == config.GROUP_VAR_NONE {
-		glog.V(4).Infoln("lbgroup is none:  deny")
+		glog.V(2).Infof("lbgroup is none, deny svc: %s %s\n", svc.Name, svc.Namespace)
 		return true
 	}
 	if groupID != p.GroupID {
-		glog.V(4).Infof("lbgroup %s != %s: deny\n", groupID, p.GroupID)
+		glog.V(2).Infof("not my job, deny svc: %s %s lbgroup %s != %s: deny\n", svc.Name, svc.Namespace, groupID, p.GroupID)
 		return true
 	}
 	return false
@@ -263,6 +264,9 @@ func (p Parser) notMyJob(svc *v1.Service) bool {
 
 func (p Parser) notTenxService(svc *v1.Service) bool {
 	_, exist := svc.Annotations[TenxCloudPortProtocol]
+	if !exist {
+		glog.V(2).Infof("%s in %s not a tenx serivce\n", svc.Name, svc.Namespace)
+	}
 	return !exist
 }
 

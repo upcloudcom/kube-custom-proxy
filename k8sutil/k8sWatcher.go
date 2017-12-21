@@ -23,7 +23,7 @@ import (
 	"tenx-proxy/config"
 	"tenx-proxy/k8smod"
 	"tenx-proxy/k8sutil/plugin"
-	"time"
+	//	"time"
 
 	"k8s.io/client-go/1.5/pkg/runtime"
 	"k8s.io/client-go/1.5/pkg/watch"
@@ -31,11 +31,11 @@ import (
 )
 
 const (
-	resyncPeriod = 30 * time.Minute
-	//	resyncPeriod = 0
-	PODS     = "pods"
-	SERVICES = "services"
-	ALL      = "all"
+	//	resyncPeriod = 30 * time.Minute
+	resyncPeriod = 0
+	PODS         = "pods"
+	SERVICES     = "services"
+	ALL          = "all"
 )
 
 var stopCh chan struct{} = make(chan struct{})

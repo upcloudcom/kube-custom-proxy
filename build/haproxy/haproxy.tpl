@@ -61,7 +61,7 @@ listen defaulthttp
 {{with .Backend}}{{range .}}
 backend {{.BackendName}}{{$port := .Port}}{{range .Pods}}
     cookie cookie.enncloud.cn insert indirect postonly
-    server {{.Name}} {{.IP}}:{{$port}} cookie {{.Name}} check maxconn 500{{end}}{{end}}{{end}}
+    server {{.Name}} {{.IP}}:{{$port}} cookie {{.Name}} check maxconn 2000{{end}}{{end}}{{end}}
 
 {{with .Listen}}{{range .}}
 listen {{.DomainName}}

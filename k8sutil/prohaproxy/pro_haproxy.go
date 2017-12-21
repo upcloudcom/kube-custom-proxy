@@ -221,17 +221,19 @@ func (w *Haproxy) UpdateEvent(oldObj, newObj interface{}) {
 	newObject, ok2 = newObj.(*api.Pod)
 
 	if ok1 && ok2 {
-		glog.V(2).Infof("This is update for pod", newObject.ObjectMeta.Name)
-		if newObject.ObjectMeta.DeletionTimestamp != nil {
-			// this pod will be delete when has this filed
+		glog.V(2).Info("receive update for pod", newObject.ObjectMeta.Name)
+
+		proxy, del := w.CheckPodShouldProxy((*newObject))
+		if !proxy && !del {
 			return
 		}
-		if !w.CheckPodShouldProxy((*newObject)) {
-			return
+		if del {
+			glog.V(2).Info("delete not ready pod, name: ", newObject.ObjectMeta.Name, " namespace: ", newObject.ObjectMeta.Namespace)
+			PodRemoveChan <- *newObject
+		} else {
+			glog.V(2).Info("update proxy for pod, name: ", newObject.ObjectMeta.Name, " namespace: ", newObject.ObjectMeta.Namespace)
+			PodAddChan <- *newObject
 		}
-		glog.V(2).Infoln(method, "Update proxy for pod, name:", newObject.ObjectMeta.Name, "namespace:", newObject.ObjectMeta.Namespace)
-		// update pod info
-		PodAddChan <- *newObject
 	} else {
 		//update service
 		newObject := &api.Service{}
@@ -239,28 +241,11 @@ func (w *Haproxy) UpdateEvent(oldObj, newObj interface{}) {
 		if !ok2 {
 			return
 		}
-		glog.V(2).Infoln(method, "Update proxy for service, name:", newObject.ObjectMeta.Name, "namespace:", newObject.ObjectMeta.Namespace)
-		// handle service update
+		glog.V(2).Infoln(method, "update proxy for service, name:", newObject.ObjectMeta.Name, "namespace:", newObject.ObjectMeta.Namespace)
 		ServiceAddChan <- *newObject
 	}
 }
 
-/*
-func (w *Haproxy) refresh() {
-	for {
-		<-w.signal
-		w.syncer.Event() <- struct{}{}
-		// Don't reload twice within 5 seconds
-		//time.Sleep(30 * time.Second)
-		glog.V(2).Infoln("Refreshing - current event number:", len(w.signal))
-		// If waiting job is more than 1 in the queue, consume the redundant ones directly
-		// and leave only one job to trigger the reload
-		for len(w.signal) > 1 {
-			<-w.signal
-		}
-	}
-}
-*/
 func (w *Haproxy) refresh() {
 	for {
 		<-w.signal
@@ -273,7 +258,7 @@ func (w *Haproxy) refresh() {
 		glog.V(2).Infoln("Refreshing - start refresh")
 		w.syncer.Event() <- struct{}{}
 		// Don't reload twice within 5 seconds
-		time.Sleep(5 * time.Second)
+		time.Sleep(60 * time.Second)
 	}
 }
 
