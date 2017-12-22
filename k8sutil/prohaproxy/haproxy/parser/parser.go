@@ -247,9 +247,8 @@ func (p Parser) noClusterIP(svc *v1.Service) bool {
 func (p Parser) notMyJob(svc *v1.Service) bool {
 	groupID, exist := svc.ObjectMeta.Annotations[config.GROUP_KEY_ANNOTAION]
 	if !exist {
-		// For old services, there is no lbgroup info, so every proxy will do the the job
-		glog.V(2).Infof("not set lbgroup, accept svc: %s %s\n", svc.Name, svc.Namespace)
-		return false
+		glog.V(2).Infof("not set lbgroup, deny svc: %s %s\n", svc.Name, svc.Namespace)
+		return true
 	}
 	if groupID == config.GROUP_VAR_NONE {
 		glog.V(2).Infof("lbgroup is none, deny svc: %s %s\n", svc.Name, svc.Namespace)

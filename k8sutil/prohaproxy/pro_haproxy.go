@@ -75,7 +75,7 @@ func (w *Haproxy) Init(obj interface{}) {
 	glog.V(2).Infoln("Starting service haproxy plugin.")
 
 	w.syncHaproxyConfigmap()
-	w.signal = make(chan int, 100)
+	w.signal = make(chan int, 3000)
 	w.LastErrEmailTime = time.Now()
 
 	if *config.HaFolder != "" {
@@ -88,8 +88,6 @@ func (w *Haproxy) Init(obj interface{}) {
 	go w.HaproxyShedule()
 
 	// go PrintsvcPodlist()
-	go w.SyncServices()
-	go w.SyncPods()
 }
 
 func (w *Haproxy) PublicIP() string {
@@ -258,7 +256,7 @@ func (w *Haproxy) refresh() {
 		glog.V(2).Infoln("Refreshing - start refresh")
 		w.syncer.Event() <- struct{}{}
 		// Don't reload twice within 5 seconds
-		time.Sleep(60 * time.Second)
+		time.Sleep(30 * time.Second)
 	}
 }
 

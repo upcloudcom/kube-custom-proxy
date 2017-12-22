@@ -23,7 +23,7 @@ import (
 	"tenx-proxy/config"
 	"tenx-proxy/k8smod"
 	"tenx-proxy/k8sutil/plugin"
-	//	"time"
+	"time"
 
 	"k8s.io/client-go/1.5/pkg/runtime"
 	"k8s.io/client-go/1.5/pkg/watch"
@@ -31,8 +31,7 @@ import (
 )
 
 const (
-	//	resyncPeriod = 30 * time.Minute
-	resyncPeriod = 0
+	resyncPeriod = 30 * time.Minute
 	PODS         = "pods"
 	SERVICES     = "services"
 	ALL          = "all"
@@ -143,18 +142,6 @@ func (M *K8sWatcher) Watchpods() kcache.Store {
 			UpdateFunc: M.UpdateEvent,
 		},
 	)
-
-	// eStore, eController := kframework.NewInformer(
-	// 	M.createListWatcher(PODS),
-	// 	&api.Pod{},
-	// 	resyncPeriod,
-	// 	kframework.ResourceEventHandlerFuncs{
-	// 		AddFunc:    M.CreateEvent,
-	// 		DeleteFunc: M.RemoveEvent,
-	// 		UpdateFunc: M.UpdateEvent,
-	// 	},
-	// )
-
 	go eController.Run(stopCh)
 	return eStore
 }
@@ -177,17 +164,6 @@ func (M *K8sWatcher) Watchsrvs() kcache.Store {
 			UpdateFunc: M.UpdateEvent,
 		},
 	)
-
-	// eStore, eController := kframework.NewInformer(
-	// 	M.createListWatcher(SERVICES),
-	// 	&api.Service{},
-	// 	resyncPeriod,
-	// 	kframework.ResourceEventHandlerFuncs{
-	// 		AddFunc:    M.CreateEvent,
-	// 		DeleteFunc: M.RemoveEvent,
-	// 		UpdateFunc: M.UpdateEvent,
-	// 	},
-	// )
 
 	go eController.Run(stopCh)
 	return eStore

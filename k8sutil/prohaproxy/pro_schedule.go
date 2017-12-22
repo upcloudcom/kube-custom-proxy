@@ -8,32 +8,13 @@ package prohaproxy
 import (
 	"strings"
 	"tenx-proxy/config"
-	"tenx-proxy/modules"
-	"time"
+	//	"tenx-proxy/modules"
+	//"time"
 
 	api "k8s.io/client-go/1.5/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/labels"
 
 	"github.com/golang/glog"
 )
-
-/*
-var SvcPodList = servicePodList{}
-
-type servicePodList struct {
-	PodInfo PodListInfo
-	SvcInfo ServiceListInfo
-}
-
-type ServiceListInfo struct {
-	ServiceList api.ServiceList
-	SvcMutex    sync.RWMutex
-}
-type PodListInfo struct {
-	PodList  api.PodList
-	PodMutex sync.RWMutex
-}
-*/
 
 var (
 	PIPELINE          int = 20
@@ -107,18 +88,6 @@ func (w *Haproxy) CheckPodShouldProxy(pod api.Pod) (bool, del bool) {
 	return true, false
 }
 
-// CheckPodBelongService check  pod belongs svc
-func CheckPodBelongService(pod api.Pod, svc api.Service) bool {
-	selector := labels.Set(svc.Spec.Selector).AsSelectorPreValidated()
-	if pod.ObjectMeta.Namespace != svc.ObjectMeta.Namespace {
-		return false
-	}
-	if !selector.Matches(labels.Set(pod.ObjectMeta.Labels)) {
-		return false
-	}
-	return true
-}
-
 // HaproxyShedule ...
 func (w *Haproxy) HaproxyShedule() {
 	// listen relevant channel
@@ -146,36 +115,4 @@ func (w *Haproxy) HaproxyShedule() {
 			}
 		}
 	}
-}
-
-// SyncServices ...
-func (w *Haproxy) SyncServices() {
-	ticker := time.NewTicker(time.Minute * 30)
-	go func() {
-		for _ = range ticker.C {
-			glog.V(2).Info("Syncing service information...")
-			clientApi, err := modules.NewKubernetes(*config.KubernetesMasterUrl, *config.BearerToken, *config.Username)
-			if err != nil {
-				time.Sleep(time.Second * 2)
-				continue
-			}
-			services, err := clientApi.GetAllService()
-			if err != nil {
-				time.Sleep(time.Second * 2)
-				glog.Info("sync service error", err)
-				continue
-			}
-			for _, svc := range services.Items {
-				if !w.CheckServiceShouldProxy(&svc) {
-					glog.V(4).Infof("%s service in namespace %s cannot proxy", svc.ObjectMeta.Name, svc.ObjectMeta.Namespace)
-					continue
-				}
-				glog.V(4).Info(svc.ObjectMeta.Namespace, "\t", svc.ObjectMeta.Name)
-				if _, update := w.CheckExistsAndUpdateService(svc); update {
-					w.signal <- 1
-				}
-			}
-		}
-	}()
-
 }

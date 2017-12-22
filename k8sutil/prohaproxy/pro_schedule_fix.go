@@ -1,4 +1,4 @@
-//create: 2017/12/09 21:12:12 change: 2017/12/21 14:37:55 author:lijiao
+//create: 2017/12/09 21:12:12 change: 2017/12/22 11:03:29 author:lijiao
 package prohaproxy
 
 import (
@@ -7,6 +7,7 @@ import (
 	"github.com/golang/glog"
 	//	"github.com/google/go-cmp/cmp"
 	api "k8s.io/client-go/1.5/pkg/api/v1"
+	"k8s.io/client-go/1.5/pkg/labels"
 	"sync"
 	"tenx-proxy/config"
 	"tenx-proxy/modules"
@@ -65,10 +66,11 @@ func (w *Haproxy) CheckExistsAndUpdateService(svc api.Service) (error, bool) {
 		w.RefreshPodList(svc)
 		return nil, true
 	}
-	glog.V(2).Infof("new svc annotation: %v\n", svc.ObjectMeta.Annotations)
-	glog.V(2).Infof("old svc annotation: %v\n", v.ObjectMeta.Annotations)
+	glog.V(2).Infof("%s %s new svc annotation: %v\n", svc.Name, svc.Namespace, svc.ObjectMeta.Annotations)
+	glog.V(2).Infof("%s %s old svc annotation: %v\n", v.Name, v.Namespace, v.ObjectMeta.Annotations)
 	/*
 		if cmp.Equal(svc.ObjectMeta.Annotations, v.ObjectMeta.Annotations) {
+			glog.V(2).Infof("svc annotation not change return: %v\n", v.ObjectMeta.Annotations)
 			return nil, false
 		}
 	*/
@@ -93,15 +95,15 @@ func (w *Haproxy) CheckExistsAndUpdatePod(pod api.Pod) bool {
 func (w *Haproxy) RefreshPodList(svc api.Service) (err error, update bool) {
 	method := "RefreshServicePodList"
 	glog.V(2).Infoln("Refresh service/pod list...")
-	update = false
 
 	clientApi, err := modules.NewKubernetes(*config.KubernetesMasterUrl, *config.BearerToken, *config.Username)
 	if err != nil {
-		return err, update
+		return err, false
 	}
 
 	//fselector := modules.FieldFactory("status.phase", "Running")
-	Pods, errPods := clientApi.GetPodsBySelector(svc.Namespace, nil, nil)
+	selector := labels.Set(svc.Spec.Selector).AsSelectorPreValidated()
+	Pods, errPods := clientApi.GetPodsBySelector(svc.Namespace, selector, nil)
 	if errPods != nil {
 		glog.Infoln(method, "Error get all running pods", errPods)
 	}
@@ -109,21 +111,15 @@ func (w *Haproxy) RefreshPodList(svc api.Service) (err error, update bool) {
 	for _, pod := range Pods.Items {
 		proxy, del := w.CheckPodShouldProxy((pod))
 		if !proxy && !del {
-			return
-		}
-		if !CheckPodBelongService(pod, svc) && !del {
 			continue
 		}
 		if del {
 			w.RemovePod(pod)
-			update = true
 		} else {
-			if w.CheckExistsAndUpdatePod(pod) {
-				update = true
-			}
+			w.CheckExistsAndUpdatePod(pod)
 		}
 	}
-	return nil, update
+	return nil, true
 }
 
 // PrintsvcPodlist just for debug
@@ -197,34 +193,6 @@ func (w *Haproxy) RemovePod(pod api.Pod) bool {
 		return true
 	}
 	return false
-}
-
-// SyncPods ...
-func (w *Haproxy) SyncPods() {
-	method := "SyncPods"
-	ticker := time.NewTicker(time.Minute * 30)
-	go func() {
-		for _ = range ticker.C {
-			var err error = nil
-			var update bool = false
-			for _, svc := range svcPodInfo.Services {
-				err, update = w.CheckExistsAndUpdateService(svc)
-				if err != nil {
-					glog.Error(method, err)
-					time.Sleep(time.Second * 2)
-					err, update = w.RefreshPodList(svc)
-					if err != nil {
-						glog.Error(method, err)
-					}
-					time.Sleep(time.Second * 2)
-					continue
-				}
-			}
-			if update {
-				w.signal <- 1
-			}
-		}
-	}()
 }
 
 // InitServicePodList ...
