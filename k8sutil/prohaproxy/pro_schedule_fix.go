@@ -1,4 +1,4 @@
-//create: 2017/12/09 21:12:12 change: 2017/12/22 11:03:29 author:lijiao
+//create: 2017/12/09 21:12:12 change: 2017/12/25 21:26:32 author:lijiao
 package prohaproxy
 
 import (
@@ -33,6 +33,24 @@ func init() {
 	}
 }
 
+/* TODO
+func ClearCache() {
+	//Danger!
+	//first lock, last unlock!
+	svcPodInfo.PodMutex.Lock()
+	svcPodInfo.ServiceMutex.Lock()
+	svcPodInfo.NamespaceMutex.Lock()
+
+	svcPodInfo.Pods = make(map[string]api.Pod)
+	svcPodInfo.Services = make(map[string]api.Service)
+	svcPodInfo.Namespace = make(map[string]string)
+
+	svcPodInfo.NamespaceMutex.Unlock()
+	svcPodInfo.ServiceMutex.Unlock()
+	svcPodInfo.PodMutex.Unlock()
+}
+*/
+
 func GetServiceList() (ret []api.Service) {
 	svcPodInfo.ServiceMutex.RLock()
 	defer svcPodInfo.ServiceMutex.RUnlock()
@@ -51,7 +69,8 @@ func GetPodList() (ret []api.Pod) {
 }
 
 func (w *Haproxy) GetKey(meta api.ObjectMeta) string {
-	return meta.Namespace + "." + meta.Name + "." + string(meta.UID)
+	//return meta.Namespace + "." + meta.Name + "." + string(meta.UID)
+	return meta.Namespace + "." + meta.Name
 }
 
 // CheckExistsAndUpdateService ...
@@ -125,6 +144,7 @@ func (w *Haproxy) RefreshPodList(svc api.Service) (err error, update bool) {
 // PrintsvcPodlist just for debug
 func PrintsvcPodlist() {
 	for {
+
 		time.Sleep(10 * time.Second)
 		strsvcpod, err := json.Marshal(svcPodInfo)
 		if err != nil {

@@ -87,7 +87,7 @@ func (w *Haproxy) Init(obj interface{}) {
 	go w.refresh()
 	go w.HaproxyShedule()
 
-	// go PrintsvcPodlist()
+	//	go PrintsvcPodlist()
 }
 
 func (w *Haproxy) PublicIP() string {
@@ -256,7 +256,7 @@ func (w *Haproxy) refresh() {
 		glog.V(2).Infoln("Refreshing - start refresh")
 		w.syncer.Event() <- struct{}{}
 		// Don't reload twice within 5 seconds
-		time.Sleep(30 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }
 

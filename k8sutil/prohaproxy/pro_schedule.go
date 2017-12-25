@@ -56,7 +56,6 @@ func (w *Haproxy) CheckServiceShouldProxy(service *api.Service) bool {
 			// For old services, there is no lbgroup info, so every proxy will do the the job
 			return true
 		}
-
 	}
 
 	return true
