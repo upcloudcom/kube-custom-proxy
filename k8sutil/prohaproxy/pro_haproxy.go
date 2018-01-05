@@ -84,7 +84,8 @@ func (w *Haproxy) Init(obj interface{}) {
 	glog.V(2).Infoln("Location of haproxy configuration:", haFileFolder)
 	go w.initSyncer()
 	w.InitServicePodList()
-	go w.refresh()
+	go w.Refresh()
+	go w.updateConfigFile()
 	go w.HaproxyShedule()
 
 	//	go PrintsvcPodlist()
@@ -244,7 +245,7 @@ func (w *Haproxy) UpdateEvent(oldObj, newObj interface{}) {
 	}
 }
 
-func (w *Haproxy) refresh() {
+func (w *Haproxy) updateConfigFile() {
 	for {
 		<-w.signal
 		l := len(w.signal)

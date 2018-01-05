@@ -19,10 +19,10 @@ defaults
     option http-server-close
     option                  redispatch
     retries                 3
-    timeout check           3s
+    timeout check           60s
     timeout client          900s
     timeout client-fin      3s
-    timeout connect         5s
+    timeout connect         15s
     timeout http-keep-alive 900s
     timeout http-request    60s
     timeout queue           300s
@@ -68,4 +68,4 @@ listen {{.DomainName}}
     bind {{$.PublicIP}}:{{.PublicPort}}
     mode tcp
     balance roundrobin{{$port := .Port}}{{range .Pods}}
-    server {{.Name}} {{.IP}}:{{$port}} maxconn 2000{{end}}{{end}}{{end}}
+    server {{.Name}} {{.IP}}:{{$port}} check maxconn 2000{{end}}{{end}}{{end}}

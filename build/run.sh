@@ -24,11 +24,11 @@ command=/opt/bin/tenx-proxy --hafolder=/etc/default/hafolder $@
 
 startretries=99999
 
-stdout_logfile_maxbytes=10MB
-stdout_logfile_backups=5
+stdout_logfile_maxbytes=100MB
+stdout_logfile_backups=10
 
-stderr_logfile_maxbytes=10MB
-stderr_logfile_backups=5
+stderr_logfile_maxbytes=100MB
+stderr_logfile_backups=10
 
 [program:haproxy]
 command=/pidrunner

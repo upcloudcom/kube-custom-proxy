@@ -93,22 +93,22 @@ func (w *Haproxy) HaproxyShedule() {
 	for {
 		select {
 		case addsvc := <-ServiceAddChan:
-			glog.V(2).Infoln("receive service", addsvc.ObjectMeta.Name)
+			glog.V(2).Infoln("receive service add: ", addsvc.ObjectMeta.Name)
 			if _, update := w.CheckExistsAndUpdateService(addsvc); update {
 				w.signal <- 1
 			}
 		case addpod := <-PodAddChan:
-			glog.V(2).Infoln("receive pod", addpod.ObjectMeta.Name)
+			glog.V(2).Infoln("receive pod add: ", addpod.ObjectMeta.Name)
 			if w.CheckExistsAndUpdatePod(addpod) {
 				w.signal <- 1
 			}
 		case delsvc := <-ServiceRemoveChan:
-			glog.V(2).Infoln("delete service", delsvc.ObjectMeta.Name)
+			glog.V(2).Infoln("receive service delete: ", delsvc.ObjectMeta.Name)
 			if w.RemoveService(delsvc) {
 				w.signal <- 1
 			}
 		case delpod := <-PodRemoveChan:
-			glog.V(2).Infoln("delete Pod", delpod.ObjectMeta.Name)
+			glog.V(2).Infoln("receive pod delete: ", delpod.ObjectMeta.Name)
 			if w.RemovePod(delpod) {
 				w.signal <- 1
 			}

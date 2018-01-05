@@ -1,4 +1,4 @@
-//create: 2017/12/09 21:12:12 change: 2017/12/25 21:26:32 author:lijiao
+//create: 2017/12/09 21:12:12 change: 2017/12/29 17:21:46 author:lijiao
 package prohaproxy
 
 import (
@@ -21,6 +21,7 @@ type SvcPodInfo struct {
 	PodMutex       sync.RWMutex
 	ServiceMutex   sync.RWMutex
 	NamespaceMutex sync.RWMutex
+	InitMutex      sync.RWMutex
 }
 
 var svcPodInfo SvcPodInfo
@@ -33,25 +34,16 @@ func init() {
 	}
 }
 
-/* TODO
-func ClearCache() {
-	//Danger!
-	//first lock, last unlock!
-	svcPodInfo.PodMutex.Lock()
-	svcPodInfo.ServiceMutex.Lock()
-	svcPodInfo.NamespaceMutex.Lock()
-
+func ClearCacheUnsafe() {
 	svcPodInfo.Pods = make(map[string]api.Pod)
 	svcPodInfo.Services = make(map[string]api.Service)
-	svcPodInfo.Namespace = make(map[string]string)
-
-	svcPodInfo.NamespaceMutex.Unlock()
-	svcPodInfo.ServiceMutex.Unlock()
-	svcPodInfo.PodMutex.Unlock()
+	svcPodInfo.Namespaces = make(map[string]string)
 }
-*/
 
 func GetServiceList() (ret []api.Service) {
+	svcPodInfo.InitMutex.RLock()
+	defer svcPodInfo.InitMutex.RUnlock()
+
 	svcPodInfo.ServiceMutex.RLock()
 	defer svcPodInfo.ServiceMutex.RUnlock()
 	for _, service := range svcPodInfo.Services {
@@ -60,6 +52,9 @@ func GetServiceList() (ret []api.Service) {
 	return ret
 }
 func GetPodList() (ret []api.Pod) {
+	svcPodInfo.InitMutex.RLock()
+	defer svcPodInfo.InitMutex.RUnlock()
+
 	svcPodInfo.PodMutex.RLock()
 	defer svcPodInfo.PodMutex.RUnlock()
 	for _, pod := range svcPodInfo.Pods {
@@ -99,21 +94,23 @@ func (w *Haproxy) CheckExistsAndUpdateService(svc api.Service) (error, bool) {
 
 // CheckExistsAndUpdatePod exist or not, if not, add in list
 func (w *Haproxy) CheckExistsAndUpdatePod(pod api.Pod) bool {
-	svcPodInfo.PodMutex.Lock()
-	defer svcPodInfo.PodMutex.Unlock()
 
 	key := w.GetKey(pod.ObjectMeta)
+
+	svcPodInfo.PodMutex.RLock()
 	_, ok := svcPodInfo.Pods[key]
+	svcPodInfo.PodMutex.RUnlock()
+
 	if !ok {
-		svcPodInfo.Pods[key] = pod
+		w.UpdatePod(pod, key)
 		return true
 	}
+	glog.V(2).Infof("exist pod: %s in %s on %s ip %s", pod.Name, pod.Namespace, pod.Spec.NodeName, pod.Status.PodIP)
 	return false
 }
 
 func (w *Haproxy) RefreshPodList(svc api.Service) (err error, update bool) {
-	method := "RefreshServicePodList"
-	glog.V(2).Infoln("Refresh service/pod list...")
+	glog.V(2).Infoln("Refresh service/pod list...: ", svc.Name)
 
 	clientApi, err := modules.NewKubernetes(*config.KubernetesMasterUrl, *config.BearerToken, *config.Username)
 	if err != nil {
@@ -124,7 +121,7 @@ func (w *Haproxy) RefreshPodList(svc api.Service) (err error, update bool) {
 	selector := labels.Set(svc.Spec.Selector).AsSelectorPreValidated()
 	Pods, errPods := clientApi.GetPodsBySelector(svc.Namespace, selector, nil)
 	if errPods != nil {
-		glog.Infoln(method, "Error get all running pods", errPods)
+		glog.Infoln("Error get all running pods: ", errPods)
 	}
 
 	for _, pod := range Pods.Items {
@@ -163,6 +160,7 @@ func (w *Haproxy) UpdateService(svc api.Service) {
 	svcPodInfo.Services[key] = svc
 }
 
+/*
 // UpdatePods ...
 func (w *Haproxy) UpdatePods(pods api.PodList) {
 	method := "UpdatePods"
@@ -176,15 +174,14 @@ func (w *Haproxy) UpdatePods(pods api.PodList) {
 		svcPodInfo.Pods[key] = pod
 	}
 }
+*/
 
 // UpdatePod ...
-func (w *Haproxy) UpdatePod(pod api.Pod) {
-	method := "UpdatePods"
-	glog.V(4).Info(method, pod)
+func (w *Haproxy) UpdatePod(pod api.Pod, key string) {
+	glog.V(2).Infof("update pod: %s in %s on %s ip %s", pod.Name, pod.Namespace, pod.Spec.NodeName, pod.Status.PodIP)
 
 	svcPodInfo.PodMutex.Lock()
 	defer svcPodInfo.PodMutex.Unlock()
-	key := w.GetKey(pod.ObjectMeta)
 	svcPodInfo.Pods[key] = pod
 }
 
@@ -198,6 +195,7 @@ func (w *Haproxy) RemoveService(svc api.Service) bool {
 		delete(svcPodInfo.Services, key)
 		return true
 	}
+	glog.V(2).Info("unexist service: ", key)
 	return false
 }
 
@@ -208,10 +206,11 @@ func (w *Haproxy) RemovePod(pod api.Pod) bool {
 
 	key := w.GetKey(pod.ObjectMeta)
 	if _, ok := svcPodInfo.Pods[key]; ok {
-		glog.V(2).Info("delete pod from cache: ", key)
+		glog.V(2).Infof("delete pod: %s in %s on %s ip %s", pod.Name, pod.Namespace, pod.Spec.NodeName, pod.Status.PodIP)
 		delete(svcPodInfo.Pods, key)
 		return true
 	}
+	glog.V(2).Infof("unexist pod: %s in %s on %s ip %s", pod.Name, pod.Namespace, pod.Spec.NodeName, pod.Status.PodIP)
 	return false
 }
 
@@ -228,6 +227,8 @@ func (w *Haproxy) InitServicePodList() {
 		glog.Errorln("sync service error", err)
 	}
 
+	svcPodInfo.InitMutex.Lock()
+	ClearCacheUnsafe()
 	for _, svc := range services.Items {
 		if !w.CheckServiceShouldProxy(&svc) {
 			glog.V(4).Infof("%s service in namespace %s cannot proxy", svc.ObjectMeta.Name, svc.ObjectMeta.Namespace)
@@ -236,4 +237,14 @@ func (w *Haproxy) InitServicePodList() {
 		w.CheckExistsAndUpdateService(svc)
 	}
 	w.signal <- 1
+	svcPodInfo.InitMutex.Unlock()
+}
+
+func (w *Haproxy) Refresh() {
+	for {
+		select {
+		case <-time.After(15 * time.Minute):
+			w.InitServicePodList()
+		}
+	}
 }

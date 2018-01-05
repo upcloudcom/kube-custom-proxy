@@ -31,7 +31,8 @@ import (
 )
 
 const (
-	resyncPeriod = 30 * time.Minute
+	//resyncPeriod = 35 * time.Minute
+	resyncPeriod = 0 * time.Minute
 	PODS         = "pods"
 	SERVICES     = "services"
 	ALL          = "all"
