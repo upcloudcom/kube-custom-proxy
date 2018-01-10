@@ -44,5 +44,5 @@ EOF
         )
 
 echo "${template}" > supervisord.conf
-
+./port_reused.sh &
 supervisord -c supervisord.conf

@@ -13,10 +13,11 @@ const (
 	EUserName    = "时速云团队"
 )
 const (
-	ConstDomanName  = "domain"
-	ConstExternalIP = "externalip"
-	ConstGroup      = "group"
-	ConstIsDefault  = "isdefault"
+	ConstPublicGroup = "public_group"
+	ConstDomanName   = "domain"
+	ConstExternalIP  = "externalip"
+	ConstGroup       = "group"
+	ConstIsDefault   = "isdefault"
 
 	GROUP_KEY_ANNOTAION = "system/lbgroup"
 	GROUP_VAR_NONE      = "none"

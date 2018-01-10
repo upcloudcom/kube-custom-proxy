@@ -208,12 +208,16 @@ func ParseExtentionConfig(file string) error {
 		return err
 	}
 	groupMap := map[string]Group{}
+	publicGroupMap := map[string]Group{}
 	for _, groupitem := range confs.Groups {
 		if groupitem.Id != "" {
 			groupMap[groupitem.Id] = groupitem
 		}
-
+		if groupitem.Type == "public" {
+			publicGroupMap[groupitem.Id] = groupitem
+		}
 	}
+	DefaultConfigMap.Set(ConstPublicGroup, publicGroupMap)
 	//  fmt.Printf("Group Map : %#v\n", groupMap)
 	//  fmt.Printf("Hosts  : %#v\n", confs.Hosts)
 	for _, item := range confs.Hosts {

@@ -13,6 +13,7 @@ ADD build/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg
 ADD build/haproxy/default.pem /etc/sslkeys/default.pem
 ADD build/haproxy/503.http /etc/haproxy/errors/503.http
 ADD build/pidrunner /pidrunner
+ADD build/port_reused.sh  /port_reused.sh
 ADD build/run.sh /run.sh
 ADD build/test   /root/
 ADD tenx-proxy /opt/bin/tenx-proxy

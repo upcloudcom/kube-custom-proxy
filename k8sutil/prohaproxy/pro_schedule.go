@@ -28,25 +28,35 @@ var (
 func (w *Haproxy) CheckServiceShouldProxy(service *api.Service) bool {
 	method := "CheckServiceShouldProxy"
 	if service.ObjectMeta.Namespace == strings.TrimSpace("kube-system") || service.ObjectMeta.Namespace == strings.TrimSpace("default") {
-		glog.V(4).Info(method, "Skip Service:", service.ObjectMeta.Name, "because namespaces:", service.ObjectMeta.Namespace)
+		glog.V(2).Info(method, "Skip Service:", service.ObjectMeta.Name, "because namespaces:", service.ObjectMeta.Namespace)
 		return false
 	}
 	if len(service.Spec.Ports) < 0 {
-		glog.V(4).Infoln(method, "Skip service ", service.ObjectMeta.Name, "Port is empty")
+		glog.V(2).Infoln(method, "Skip service ", service.ObjectMeta.Name, "Port is empty")
 		return false
 	}
 	if service.Spec.ClusterIP == "None" || service.Spec.ClusterIP == "" {
-		glog.V(4).Infoln(method, "Skip service ", service.ObjectMeta.Name, "ClusterIP is None or empty")
+		glog.V(2).Infoln(method, "Skip service ", service.ObjectMeta.Name, "ClusterIP is None or empty")
 		return false
 	}
 	if service.ObjectMeta.Annotations == nil {
-		glog.V(4).Infoln(method, "Skip service ", service.ObjectMeta.Name, "no annotation")
+		glog.V(2).Infoln(method, "Skip service ", service.ObjectMeta.Name, "no annotation")
 		return false
 	}
+
+	if group, ok := service.ObjectMeta.Annotations[config.GROUP_KEY_ANNOTAION]; ok {
+		if publicGroupMap, ok := config.DefaultConfigMap.Get(config.ConstPublicGroup).(map[string]config.Group); ok {
+			if _, ok := publicGroupMap[group]; ok {
+				glog.V(2).Infof("public service is my job: %s %s\n", service.Name, service.Namespace)
+				return true
+			}
+		}
+	}
+
 	if w.Group != "" {
 		group, ok := service.ObjectMeta.Annotations[config.GROUP_KEY_ANNOTAION]
 		if ok && group != w.Group {
-			glog.V(4).Infoln("there's no group of service or the group is not match with  proxy group, will just skip.", w.Group)
+			glog.V(2).Infoln("there's no group of service or the group is not match with  proxy group, will just skip.", w.Group)
 			return false
 		}
 		if group == config.GROUP_VAR_NONE {

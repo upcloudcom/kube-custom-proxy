@@ -159,7 +159,6 @@ func (w *Haproxy) CreateEvent(obj interface{}) {
 	if !ok2 {
 		return
 	}
-	glog.V(2).Infof("This is new for service,  %q ", newObject)
 	if !w.CheckServiceShouldProxy(newObject) {
 		glog.V(2).Infoln(method, "no meet condition, skipping...")
 		return

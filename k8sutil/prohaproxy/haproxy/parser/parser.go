@@ -254,6 +254,12 @@ func (p Parser) notMyJob(svc *v1.Service) bool {
 		glog.V(2).Infof("lbgroup is none, deny svc: %s %s\n", svc.Name, svc.Namespace)
 		return true
 	}
+	if publicGroupMap, ok := config.DefaultConfigMap.Get(config.ConstPublicGroup).(map[string]config.Group); ok {
+		if _, ok := publicGroupMap[groupID]; ok {
+			glog.V(2).Infof("public service is my job: %s %s\n", svc.Name, svc.Namespace)
+			return false
+		}
+	}
 	if groupID != p.GroupID {
 		glog.V(2).Infof("not my job, deny svc: %s %s lbgroup %s != %s: deny\n", svc.Name, svc.Namespace, groupID, p.GroupID)
 		return true
